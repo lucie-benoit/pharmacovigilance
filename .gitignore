@@ -1,0 +1,12 @@
+# Data 
+pharmacovigilance/data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Spark checkpoints
+checkpoints/
+
+# Docker volumes
+mongo_data/

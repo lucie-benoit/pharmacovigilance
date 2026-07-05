@@ -1,0 +1,14 @@
+#access to the database
+docker exec -it pharma_mongo mongosh
+
+# available bases
+show dbs
+
+#go to pharmacovigilance 
+use pharmacovigilance
+
+#show the collections 
+show collections
+
+#see the content of a collection 
+db.top_drugs.find().pretty()

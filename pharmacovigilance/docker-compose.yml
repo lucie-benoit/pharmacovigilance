@@ -1,0 +1,65 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: pharma_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - pharma_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  spark-batch:
+    image: apache/spark:3.5.0
+    container_name: pharma_spark_batch
+    depends_on:
+      mongo:
+        condition: service_healthy
+    user: root
+    restart: "no"
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: >
+      /opt/spark/bin/spark-submit
+      --conf spark.jars.ivy=/tmp/ivy
+      --conf spark.driver.memory=2g
+      --conf spark.executor.memory=2g
+      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.3.0
+      scripts/pharma_batch.py
+    networks:
+      - pharma_net
+
+  spark-streaming:
+    image: apache/spark:3.5.0
+    container_name: pharma_streaming
+    depends_on:
+      mongo:
+        condition: service_healthy
+      spark-batch:
+        condition: service_completed_successfully
+    user: root
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: >
+      /opt/spark/bin/spark-submit
+      --conf spark.jars.ivy=/tmp/ivy
+      --conf spark.driver.memory=2g
+      --conf spark.executor.memory=2g
+      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.3.0
+      scripts/pharma_streaming.py
+    networks:
+      - pharma_net
+
+volumes:
+  mongo_data:
+
+networks:
+  pharma_net:
+    driver: bridge
